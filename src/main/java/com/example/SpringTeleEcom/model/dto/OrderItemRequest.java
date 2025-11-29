@@ -1,6 +1,6 @@
 package com.example.SpringTeleEcom.model.dto;
 
 public record OrderItemRequest(
-    int productId,
+    long productId,
     int quantity
 ){}

@@ -2,39 +2,73 @@ package com.example.SpringTeleEcom.service;
 
 import com.example.SpringTeleEcom.model.Product;
 import com.example.SpringTeleEcom.repo.ProductRepo;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class ProductService {
 
-    @Autowired
-    private ProductRepo productRepo;
+    private final ProductRepo productRepo;
 
+    public ProductService(ProductRepo productRepo) {
+        this.productRepo = productRepo;
+    }
 
+    // Get all products
     public List<Product> getAllProducts() {
         return productRepo.findAll();
-
     }
 
+    // Get product by Long id (controller uses Long, entity uses int)
     public Product getProductById(Long id) {
-        return productRepo.findById(Math.toIntExact(id)).orElse(null);
+        if (id == null) return null;
+        Optional<Product> productOpt = productRepo.findById(Math.toIntExact(id));
+        return productOpt.orElse(null);
     }
 
+    /**
+     * Add or update product.
+     * - If imageFile is provided → store new image.
+     * - If imageFile is null/empty and product has id → keep existing image.
+     */
     public Product addOrUpdateProduct(Product product, MultipartFile imageFile) throws IOException {
-        product.setImageName(imageFile.getOriginalFilename());
-        product.setImageType(imageFile.getContentType());
-        product.setImageData(imageFile.getBytes());
 
-        return productRepo.save(product);
+        Product productToSave;
+
+        // If updating an existing product, load it first
+        if (product.getId() != 0) {
+            productToSave = productRepo.findById(product.getId())
+                    .orElse(new Product());
+        } else {
+            productToSave = new Product();
+        }
+
+        // Copy basic fields (except image fields)
+        productToSave.setName(product.getName());
+        productToSave.setDescription(product.getDescription());
+        productToSave.setBrand(product.getBrand());
+        productToSave.setPrice(product.getPrice());
+        productToSave.setCategory(product.getCategory());
+        productToSave.setReleaseDate(product.getReleaseDate());
+        productToSave.setProductAvailable(product.isProductAvailable());
+        productToSave.setStockQuantity(product.getStockQuantity());
+
+        // Handle image (only replace if a new file is sent)
+        if (imageFile != null && !imageFile.isEmpty()) {
+            productToSave.setImageName(imageFile.getOriginalFilename());
+            productToSave.setImageType(imageFile.getContentType());
+            productToSave.setImageData(imageFile.getBytes());
+        }
+
+        return productRepo.save(productToSave);
     }
-
 
     public void deleteProduct(Long id) {
+        if (id == null) return;
         productRepo.deleteById(Math.toIntExact(id));
     }
 

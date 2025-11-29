@@ -1,4 +1,5 @@
 package com.example.SpringTeleEcom.service;
+
 import com.example.SpringTeleEcom.model.Order;
 import com.example.SpringTeleEcom.model.OrderItem;
 import com.example.SpringTeleEcom.model.Product;
@@ -8,8 +9,8 @@ import com.example.SpringTeleEcom.model.dto.OrderRequest;
 import com.example.SpringTeleEcom.model.dto.OrderResponse;
 import com.example.SpringTeleEcom.repo.OrderRepo;
 import com.example.SpringTeleEcom.repo.ProductRepo;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -20,15 +21,19 @@ import java.util.UUID;
 @Service
 public class OrderService {
 
-    @Autowired
-    private ProductRepo productRepo;
-    @Autowired
-    private OrderRepo orderRepo;
+    private final ProductRepo productRepo;
+    private final OrderRepo orderRepo;
 
+    public OrderService(ProductRepo productRepo, OrderRepo orderRepo) {
+        this.productRepo = productRepo;
+        this.orderRepo = orderRepo;
+    }
+
+    @Transactional
     public OrderResponse placeOrder(OrderRequest request) {
 
         Order order = new Order();
-        String orderId = "ORD" + UUID.randomUUID().toString().substring(0,8).toUpperCase();
+        String orderId = "ORD" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
         order.setOrderId(orderId);
         order.setCustomerName(request.customerName());
         order.setEmail(request.email());
@@ -36,10 +41,16 @@ public class OrderService {
         order.setOrderDate(LocalDate.now());
 
         List<OrderItem> orderItems = new ArrayList<>();
+
         for (OrderItemRequest itemReq : request.items()) {
 
-            Product product = productRepo.findById(itemReq.productId())
-                    .orElseThrow(() -> new RuntimeException("Product not found"));
+            Product product = productRepo.findById(Math.toIntExact(itemReq.productId()))
+                    .orElseThrow(() -> new RuntimeException("Product not found: " + itemReq.productId()));
+
+            // simple stock check (optional, but recommended)
+            if (product.getStockQuantity() < itemReq.quantity()) {
+                throw new RuntimeException("Insufficient stock for product: " + product.getName());
+            }
 
             product.setStockQuantity(product.getStockQuantity() - itemReq.quantity());
             productRepo.save(product);
@@ -50,15 +61,15 @@ public class OrderService {
                     .totalPrice(product.getPrice().multiply(BigDecimal.valueOf(itemReq.quantity())))
                     .order(order)
                     .build();
-            orderItems.add(orderItem);
 
+            orderItems.add(orderItem);
         }
 
         order.setOrderItems(orderItems);
         Order savedOrder = orderRepo.save(order);
 
         List<OrderItemResponse> itemResponses = new ArrayList<>();
-        for (OrderItem item : order.getOrderItems()) {
+        for (OrderItem item : savedOrder.getOrderItems()) {
             OrderItemResponse orderItemResponse = new OrderItemResponse(
                     item.getProduct().getName(),
                     item.getQuantity(),
@@ -67,7 +78,7 @@ public class OrderService {
             itemResponses.add(orderItemResponse);
         }
 
-        OrderResponse orderResponse = new OrderResponse(
+        return new OrderResponse(
                 savedOrder.getOrderId(),
                 savedOrder.getCustomerName(),
                 savedOrder.getEmail(),
@@ -75,13 +86,12 @@ public class OrderService {
                 savedOrder.getOrderDate(),
                 itemResponses
         );
-
-        return orderResponse;
     }
 
     public List<OrderResponse> getAllOrderResponses() {
         List<Order> orders = orderRepo.findAll();
         List<OrderResponse> orderResponses = new ArrayList<>();
+
         for (Order order : orders) {
             List<OrderItemResponse> itemResponses = new ArrayList<>();
             for (OrderItem item : order.getOrderItems()) {
