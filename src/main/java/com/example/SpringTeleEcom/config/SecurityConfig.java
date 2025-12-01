@@ -1,6 +1,7 @@
 package com.example.SpringTeleEcom.config;
 
 import com.example.SpringTeleEcom.security.JwtAuthenticationFilter;
+import com.example.SpringTeleEcom.security.CustomOAuth2SuccessHandler;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -24,31 +25,48 @@ import java.util.List;
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final CustomOAuth2SuccessHandler oAuth2SuccessHandler;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
 
         http
+                // We use JWT, so disable CSRF for APIs
                 .csrf(csrf -> csrf.disable())
+
+                // CORS for React dev server
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+
+                // Stateless sessions (JWT)
                 .sessionManagement(session ->
-                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                )
+
                 .authorizeHttpRequests(auth -> auth
-                        // auth endpoints
+                        // Auth APIs (login / register)
                         .requestMatchers("/api/auth/**").permitAll()
 
-                        // public product endpoints (list, details, images)
+                        // OAuth2 endpoints (Google/GitHub redirect flows)
+                        .requestMatchers("/oauth2/**", "/login/oauth2/**").permitAll()
+
+                        // Public product browse endpoints
                         .requestMatchers(HttpMethod.GET, "/api/product/**").permitAll()
 
-                        // any authenticated user can place an order
+                        // Orders: placing / viewing require auth; admin control is via @PreAuthorize
                         .requestMatchers(HttpMethod.POST, "/api/orders").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/api/orders/my").authenticated()
+                        .requestMatchers("/api/orders/**").authenticated()
 
-                        // only admin can view all orders
-                        .requestMatchers(HttpMethod.GET, "/api/orders/**").hasRole("ADMIN")
-
-                        // everything else must be authenticated
+                        // Everything else needs authentication
                         .anyRequest().authenticated()
                 )
+
+                // OAuth2 login (Google, GitHub) → our custom success handler issues JWT + redirects
+                .oauth2Login(oauth2 -> oauth2
+                        .successHandler(oAuth2SuccessHandler)
+                )
+
+                // Add JWT filter before username/password auth filter
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
@@ -68,7 +86,12 @@ public class SecurityConfig {
     @Bean
     CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("http://localhost:5173"));
+
+        // React dev ports
+        configuration.setAllowedOrigins(List.of(
+                "http://localhost:5173",
+                "http://localhost:5174"
+        ));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("Authorization", "Content-Type"));
         configuration.setAllowCredentials(true);
