@@ -8,10 +8,11 @@ on:
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout code
+      - name: Checkout backend repo (this repo)
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
@@ -21,6 +22,13 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Debug - list files at repo root
+        run: |
+          echo "==== root ===="
+          ls -la
+          echo "==== root tree ===="
+          find . -maxdepth 2 -type d -print || true
 
       # ---- BACKEND ----
       - name: Build & Push Backend Image
@@ -32,6 +40,21 @@ jobs:
           tags: |
             saipraveenm919/teleecom-backend:latest
             saipraveenm919/teleecom-backend:${{ github.sha }}
+
+      # ---- CHECKOUT PUBLIC FRONTEND REPO INTO ./frontend ----
+      - name: Checkout frontend repo (public)
+        uses: actions/checkout@v4
+        with:
+          repository: saipraveenm919/teleecom-frontend
+          path: frontend
+          fetch-depth: 0
+
+      - name: Debug - list frontend
+        run: |
+          echo "==== frontend path listing ===="
+          ls -la frontend || true
+          echo "frontend package.json (if exists):"
+          if [ -f frontend/package.json ]; then cat frontend/package.json | sed -n '1,120p'; else echo "no package.json found"; fi
 
       # ---- FRONTEND ----
       - name: Build & Push Frontend Image
