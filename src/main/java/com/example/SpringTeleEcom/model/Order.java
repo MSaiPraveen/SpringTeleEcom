@@ -31,7 +31,17 @@ public class Order {
     @JoinColumn(name = "user_id")
     private User user;
 
-    // Order items
+    // Order items - using "items" field name to match your getOrderItems() method
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL)
-    private List<OrderItem> orderItems;
+    private List<OrderItem> items;
+
+    // Lombok will generate getItems() and setItems()
+    // But you also have getOrderItems() method, so adding alias methods
+    public List<OrderItem> getOrderItems() {
+        return items;
+    }
+
+    public void setOrderItems(List<OrderItem> orderItems) {
+        this.items = orderItems;
+    }
 }

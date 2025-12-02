@@ -35,3 +35,15 @@ build/
 ### Environment Variables ###
 .env
 
+### Temporary/Test Files ###
+*.html
+*.bat
+*.ps1
+*_FIX.md
+*_INSTRUCTIONS.md
+*_SUMMARY.md
+*_START.md
+
+### Docker ###
+docker-compose-db-only.yml
+

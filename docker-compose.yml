@@ -27,13 +27,32 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    env_file:
+      - .env
     environment:
+      # Database / JWT
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB}
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
       JWT_SECRET: ${JWT_SECRET}
       app.jwt.secret: ${JWT_SECRET}
-      frontend.url: ${FRONTEND_URL}
+
+      # Host-facing URLs (used for OAuth redirect URIs that the browser uses)
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
+      BACKEND_URL: ${BACKEND_URL:-http://localhost:8080}
+
+      # OAuth2 - Direct Spring property bindings (these are the most reliable)
+      SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+      SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GOOGLE_SCOPE: openid,profile,email
+      SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GOOGLE_REDIRECT_URI: ${BACKEND_URL:-http://localhost:8080}/login/oauth2/code/google
+
+      SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID}
+      SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET}
+      SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GITHUB_SCOPE: user:email
+      SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GITHUB_REDIRECT_URI: ${BACKEND_URL:-http://localhost:8080}/login/oauth2/code/github
+
+
     ports:
       - "${BACKEND_PORT:-8080}:8080"
     restart: on-failure
@@ -42,9 +61,21 @@ services:
     build:
       context: ${FRONTEND_BUILD_CONTEXT:-./frontend}
       dockerfile: Dockerfile
+      args:
+        - VITE_BASE_URL=http://backend:8080
+        - VITE_API_URL=http://backend:8080/api
+        - REACT_APP_BACKEND_URL=http://backend:8080
+        - REACT_APP_API_URL=http://backend:8080/api
     image: teleecom-frontend:latest
     depends_on:
       - backend
+    environment:
+      VITE_BASE_URL: http://backend:8080
+      VITE_API_URL: http://backend:8080/api
+      REACT_APP_BACKEND_URL: http://backend:8080
+      REACT_APP_API_URL: http://backend:8080/api
+      BACKEND_URL: ${BACKEND_URL:-http://localhost:8080}
+      API_URL: ${API_URL:-http://localhost:8080/api}
     ports:
       - "${FRONTEND_PORT:-5173}:80"
     restart: unless-stopped

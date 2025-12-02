@@ -49,18 +49,31 @@ public class CustomOAuth2SuccessHandler implements org.springframework.security.
         // Try to extract email & name from Google/GitHub
         String email = (String) attributes.getOrDefault("email", null);
         String name = null;
+        String login = null;  // GitHub username
 
         if (attributes.containsKey("name")) {
             name = (String) attributes.get("name");
-        } else if (attributes.containsKey("login")) {
+        }
+
+        if (attributes.containsKey("login")) {
             // GitHub username
-            name = (String) attributes.get("login");
+            login = (String) attributes.get("login");
+            if (name == null) {
+                name = login;  // Use login as name if name is not provided
+            }
         }
 
         if (email == null) {
             // GitHub: sometimes email is null if it's private
             // Fallback to login as "email-like" username
-            email = name + "@github.local";
+            if (login != null) {
+                email = login + "@github.local";
+            } else if (name != null) {
+                email = name + "@github.local";
+            } else {
+                // Last resort: use a generic identifier
+                email = "user_" + attributes.get("id") + "@oauth.local";
+            }
         }
 
         // Use email as username in our app
