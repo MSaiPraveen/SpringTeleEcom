@@ -1,0 +1,39 @@
+# Render service configuration for Docker-based Spring Boot backend
+# Place this file at the repo root (commit & push) so Render can use it.
+# Replace any placeholder values or secret names before using in production.
+services:
+  - type: web
+    name: teleecom-backend
+    env: docker
+    plan: free
+    region: oregon
+    repo: https://github.com/MSaiPraveen/SpringTeleEcom.git
+    branch: main
+    root_dir: /
+    dockerfile_path: Dockerfile
+    instance_count: 1
+
+    # Health checks
+    health_check_path: /actuator/health
+    health_check_interval_seconds: 10
+    health_check_timeout_seconds: 5
+    health_check_grace_period_seconds: 60
+
+    # Environment variables (do not commit secrets into git)
+    env_vars:
+      SPRING_DATASOURCE_URL: "${SPRING_DATASOURCE_URL}"
+      SPRING_DATASOURCE_USERNAME: "${SPRING_DATASOURCE_USERNAME}"
+      SPRING_DATASOURCE_PASSWORD: "${SPRING_DATASOURCE_PASSWORD}"
+      JWT_SECRET: "${JWT_SECRET}"
+      FRONTEND_URL: "${FRONTEND_URL}"
+      GOOGLE_CLIENT_ID: "${GOOGLE_CLIENT_ID}"
+      GOOGLE_CLIENT_SECRET: "${GOOGLE_CLIENT_SECRET}"
+      GITHUB_CLIENT_ID: "${GITHUB_CLIENT_ID}"
+      GITHUB_CLIENT_SECRET: "${GITHUB_CLIENT_SECRET}"
+
+    # Optional: increase startup timeout if your app starts slowly
+    start_timeout_seconds: 12000
+
+# If you need multiple services (static site, jobs, cron, etc.), add them below following the same structure.
+# After committing this file, Render will use it when creating/updating the service if you create the service from the repo.
+

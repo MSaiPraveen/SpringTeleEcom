@@ -3,6 +3,7 @@ package com.example.SpringTeleEcom.config;
 import com.example.SpringTeleEcom.security.JwtAuthenticationFilter;
 import com.example.SpringTeleEcom.security.CustomOAuth2SuccessHandler;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -17,7 +18,10 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.*;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Configuration
 @EnableMethodSecurity
@@ -27,22 +31,30 @@ public class SecurityConfig {
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final CustomOAuth2SuccessHandler oAuth2SuccessHandler;
 
+    // Read allowed origins from env (comma-separated) with sensible defaults
+    @Value("${FRONTEND_URL:http://localhost:5173}")
+    private String frontendUrlEnv;
+
+    @Value("${ADDITIONAL_ALLOWED_ORIGINS:}")
+    private String additionalAllowedOriginsEnv;
+
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
 
         http
-                // We use JWT, so disable CSRF for APIs
                 .csrf(csrf -> csrf.disable())
 
-                // CORS for React dev server
+                // enable CORS using our corsConfigurationSource bean
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
 
-                // Stateless sessions (JWT)
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
 
                 .authorizeHttpRequests(auth -> auth
+                        // allow preflight requests
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+
                         // Auth APIs (login / register)
                         .requestMatchers("/api/auth/**").permitAll()
 
@@ -57,16 +69,13 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/orders/my").authenticated()
                         .requestMatchers("/api/orders/**").authenticated()
 
-                        // Everything else needs authentication
                         .anyRequest().authenticated()
                 )
 
-                // OAuth2 login (Google, GitHub) → our custom success handler issues JWT + redirects
                 .oauth2Login(oauth2 -> oauth2
                         .successHandler(oAuth2SuccessHandler)
                 )
 
-                // Add JWT filter before username/password auth filter
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
@@ -87,14 +96,33 @@ public class SecurityConfig {
     CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
 
-        // React dev ports
-        configuration.setAllowedOrigins(List.of(
-                "http://localhost:5173",
-                "http://localhost:5174"
-        ));
-        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(List.of("Authorization", "Content-Type"));
+        // Build allowed origins list from FRONTEND_URL and an optional extra list
+        List<String> origins = new ArrayList<>();
+        if (frontendUrlEnv != null && !frontendUrlEnv.isBlank()) {
+            origins.add(frontendUrlEnv.trim());
+        }
+        if (additionalAllowedOriginsEnv != null && !additionalAllowedOriginsEnv.isBlank()) {
+            origins.addAll(Arrays.stream(additionalAllowedOriginsEnv.split(","))
+                    .map(String::trim)
+                    .filter(s -> !s.isEmpty())
+                    .collect(Collectors.toList()));
+        }
+
+        // For dev convenience include localhost ports if not already present
+        if (origins.stream().noneMatch(o -> o.contains("localhost"))) {
+            origins.addAll(Arrays.asList("http://localhost:5173", "http://localhost:5174"));
+        }
+
+        // Use allowedOriginPatterns to support dynamic subdomains and https origins if needed.
+        // We still set explicit origins first (safer).
+        configuration.setAllowedOrigins(origins);
+        configuration.setAllowedOriginPatterns(List.of("https://*.vercel.app", "https://*.onrender.com"));
+
+        // Allow common methods and headers, and credentials (cookies)
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
+        configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept", "X-Requested-With"));
         configuration.setAllowCredentials(true);
+        configuration.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source =
                 new UrlBasedCorsConfigurationSource();

@@ -32,6 +32,10 @@ public class ProductController {
         return ResponseEntity.ok(productService.getAllProducts());
     }
 
+    @GetMapping("/health")
+    public ResponseEntity<String> health() { return ResponseEntity.ok("ok"); }
+
+
     // Get single product by id (public)
     @GetMapping("/product/{id}")
     public ResponseEntity<Product> getProductById(@PathVariable Long id) {
