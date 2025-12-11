@@ -45,8 +45,6 @@ public class OrderController {
         return new ResponseEntity<>(orderResponseList, HttpStatus.OK);
     }
 
-    @GetMapping("/health")
-    public ResponseEntity<String> health() { return ResponseEntity.ok("ok"); }
 
 
     // 🔹 Update order status – ADMIN only
