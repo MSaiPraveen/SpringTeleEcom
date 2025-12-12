@@ -19,12 +19,28 @@ public class CustomUserDetailsService implements UserDetailsService {
     public UserDetails loadUserByUsername(String username)
             throws UsernameNotFoundException {
 
+        System.out.println("🔍 CustomUserDetailsService - Loading user: " + username);
+
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+                .orElseThrow(() -> {
+                    System.err.println("❌ User NOT FOUND in database: " + username);
+                    return new UsernameNotFoundException("User not found: " + username);
+                });
+
+        System.out.println("✅ User found: " + username);
+        System.out.println("   Roles: " + user.getRoles().size());
+
+        if (user.getRoles().isEmpty()) {
+            System.err.println("⚠️  WARNING: User has NO ROLES: " + username);
+        }
+
+        user.getRoles().forEach(role ->
+            System.out.println("   - " + role.getName())
+        );
 
         return new org.springframework.security.core.userdetails.User(
                 user.getUsername(),
-                user.getPassword(),
+                user.getPassword() != null ? user.getPassword() : "",  // Handle null password for OAuth users
                 user.getRoles().stream()
                         .map(role -> new SimpleGrantedAuthority(role.getName()))
                         .collect(Collectors.toList())

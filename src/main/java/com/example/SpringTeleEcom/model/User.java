@@ -20,7 +20,7 @@ public class User {
     @Column(unique = true, nullable = false)
     private String username;      // used for login; can be email
 
-    @Column(nullable = false)
+    @Column(nullable = true)  // Allow null for OAuth users
     private String password;
 
     private String fullName;

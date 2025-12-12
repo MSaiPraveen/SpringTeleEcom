@@ -79,18 +79,33 @@ public class CustomOAuth2SuccessHandler implements org.springframework.security.
         // Use email as username in our app
         String username = email;
 
+        System.out.println("🔐 OAuth2 Login Success:");
+        System.out.println("   Provider: " + (login != null ? "GitHub" : "Google"));
+        System.out.println("   Username: " + username);
+        System.out.println("   Name: " + name);
+
         // Find or create user
         Optional<User> existingUserOpt = userRepository.findByUsername(username);
         User user;
 
         if (existingUserOpt.isPresent()) {
             user = existingUserOpt.get();
+            System.out.println("✅ Existing user found: " + username);
+            System.out.println("   User ID: " + user.getId());
+            System.out.println("   Roles: " + user.getRoles().size());
         } else {
+            System.out.println("📝 Creating new OAuth user: " + username);
+
             // assign ROLE_USER by default
             Role userRole = roleRepository.findByName("ROLE_USER")
-                    .orElseGet(() -> roleRepository.save(
-                            Role.builder().name("ROLE_USER").build()
-                    ));
+                    .orElseGet(() -> {
+                        System.out.println("   Creating ROLE_USER...");
+                        return roleRepository.save(
+                                Role.builder().name("ROLE_USER").build()
+                        );
+                    });
+
+            System.out.println("   Role assigned: " + userRole.getName() + " (ID: " + userRole.getId() + ")");
 
             user = User.builder()
                     .username(username)
@@ -100,12 +115,21 @@ public class CustomOAuth2SuccessHandler implements org.springframework.security.
                     .build();
 
             user = userRepository.save(user);
+            System.out.println("✅ User created and saved:");
+            System.out.println("   User ID: " + user.getId());
+            System.out.println("   Username: " + user.getUsername());
+            System.out.println("   Roles: " + user.getRoles().size());
         }
 
         boolean isAdmin = user.getRoles().stream()
                 .anyMatch(r -> "ROLE_ADMIN".equals(r.getName()));
 
+        System.out.println("   Is Admin: " + isAdmin);
+
         String token = jwtService.generateToken(user.getUsername());
+
+        System.out.println("🎫 JWT Token generated for: " + user.getUsername());
+        System.out.println("   Token length: " + token.length());
 
         // Redirect back to frontend with token and isAdmin flag
         String redirectUrl = String.format(
@@ -116,6 +140,7 @@ public class CustomOAuth2SuccessHandler implements org.springframework.security.
                 isAdmin
         );
 
+        System.out.println("↗️  Redirecting to: " + frontendRedirectUri);
         response.sendRedirect(redirectUrl);
     }
 }

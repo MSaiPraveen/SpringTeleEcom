@@ -91,12 +91,28 @@ public class OrderService {
     public List<OrderResponse> getCurrentUserOrderResponses() {
 
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+
+        if (auth == null || !auth.isAuthenticated()) {
+            System.err.println("❌ No authentication found in SecurityContext");
+            throw new RuntimeException("User not authenticated");
+        }
+
         String username = auth.getName();
+        System.out.println("📦 Getting orders for user: " + username);
+        System.out.println("   Authorities: " + auth.getAuthorities());
 
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("User not found: " + username));
+                .orElseThrow(() -> {
+                    System.err.println("❌ User not found in database: " + username);
+                    System.err.println("   This OAuth user may not have been saved properly during login");
+                    return new RuntimeException("User not found: " + username);
+                });
+
+        System.out.println("✅ User found: " + user.getUsername() + " (ID: " + user.getId() + ")");
 
         List<Order> orders = orderRepo.findByUserId(user.getId());
+
+        System.out.println("📋 Found " + orders.size() + " orders for user");
 
         return orders.stream()
                 .map(this::mapToOrderResponse)
