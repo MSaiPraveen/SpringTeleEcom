@@ -25,9 +25,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             HttpServletResponse response,
             FilterChain filterChain) throws ServletException, IOException {
 
+        String path = request.getRequestURI();
         String header = request.getHeader("Authorization");
 
+        System.out.println("🔐 JWT Filter - Path: " + path + ", Auth Header: " + (header != null ? "Present" : "Missing"));
+
         if (header == null || !header.startsWith("Bearer ")) {
+            System.out.println("⚠️  No Bearer token found, continuing without authentication");
             filterChain.doFilter(request, response);
             return;
         }
@@ -35,6 +39,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         try {
             String token = header.substring(7);
             String username = jwtService.getUsernameFromToken(token);
+
+            System.out.println("👤 Extracted username from token: " + username);
 
             if (username != null &&
                     SecurityContextHolder.getContext().getAuthentication() == null) {
@@ -49,11 +55,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                                     userDetails.getAuthorities()
                             );
                     SecurityContextHolder.getContext().setAuthentication(authToken);
+                    System.out.println("✅ Authentication successful for user: " + username);
+                } else {
+                    System.out.println("❌ Token validation failed for user: " + username);
                 }
             }
         } catch (Exception e) {
             // Log the JWT error but don't block the request
             // This allows public endpoints to work even with invalid tokens
+            System.err.println("❌ JWT validation error: " + e.getMessage());
             logger.warn("JWT validation failed: " + e.getMessage());
             // Clear any partial authentication that might have been set
             SecurityContextHolder.clearContext();

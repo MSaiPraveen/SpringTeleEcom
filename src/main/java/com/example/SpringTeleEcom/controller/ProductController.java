@@ -1,6 +1,7 @@
 package com.example.SpringTeleEcom.controller;
 
 import com.example.SpringTeleEcom.model.Product;
+import com.example.SpringTeleEcom.model.dto.ProductDTO;
 import com.example.SpringTeleEcom.service.ProductService;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -11,7 +12,9 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.Base64;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api")
@@ -23,11 +26,39 @@ public class ProductController {
         this.productService = productService;
     }
 
+    // Helper method to convert Product to ProductDTO
+    private ProductDTO convertToDTO(Product product) {
+        ProductDTO dto = ProductDTO.builder()
+                .id(product.getId())
+                .name(product.getName())
+                .description(product.getDescription())
+                .brand(product.getBrand())
+                .price(product.getPrice())
+                .category(product.getCategory())
+                .releaseDate(product.getReleaseDate())
+                .productAvailable(product.isProductAvailable())
+                .stockQuantity(product.getStockQuantity())
+                .imageName(product.getImageName())
+                .imageType(product.getImageType())
+                .build();
+
+        // Add base64 image data if available
+        if (product.getImageData() != null && product.getImageData().length > 0) {
+            String base64Image = Base64.getEncoder().encodeToString(product.getImageData());
+            String imageDataUrl = "data:" +
+                (product.getImageType() != null ? product.getImageType() : "image/jpeg") +
+                ";base64," + base64Image;
+            dto.setImageUrl(imageDataUrl);
+        }
+
+        return dto;
+    }
+
     // ================== PUBLIC ENDPOINTS ==================
 
     // Get all products (public)
     @GetMapping("/product")
-    public ResponseEntity<List<Product>> getProducts() {
+    public ResponseEntity<List<ProductDTO>> getProducts() {
         System.out.println("📋 GET /api/product - Fetching all products");
         List<Product> products = productService.getAllProducts();
         System.out.println("📦 Found " + products.size() + " products");
@@ -38,7 +69,11 @@ public class ProductController {
             System.out.println("⚠️ No products in database!");
         }
 
-        return ResponseEntity.ok(products);
+        List<ProductDTO> productDTOs = products.stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+
+        return ResponseEntity.ok(productDTOs);
     }
 
 
@@ -46,10 +81,10 @@ public class ProductController {
 
     // Get single product by id (public)
     @GetMapping("/product/{id}")
-    public ResponseEntity<Product> getProductById(@PathVariable Long id) {
+    public ResponseEntity<ProductDTO> getProductById(@PathVariable Long id) {
         Product product = productService.getProductById(id);
         if (product != null) {
-            return ResponseEntity.ok(product);
+            return ResponseEntity.ok(convertToDTO(product));
         } else {
             return ResponseEntity.notFound().build();
         }

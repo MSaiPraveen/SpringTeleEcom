@@ -78,9 +78,22 @@ public class SecurityConfig {
                 // Return 401 instead of redirecting to login
                 .exceptionHandling(ex -> ex
                         .authenticationEntryPoint((request, response, authException) -> {
+                            String path = request.getRequestURI();
+                            String authHeader = request.getHeader("Authorization");
+
+                            System.err.println("🚫 Authentication failed for path: " + path);
+                            System.err.println("   Auth header present: " + (authHeader != null));
+                            System.err.println("   Error: " + authException.getMessage());
+
                             response.setStatus(401);
                             response.setContentType("application/json");
-                            response.getWriter().write("{\"error\": \"Unauthorized\", \"message\": \"" + authException.getMessage() + "\"}");
+                            response.getWriter().write(String.format(
+                                "{\"error\": \"Unauthorized\", " +
+                                "\"message\": \"%s\", " +
+                                "\"path\": \"%s\", " +
+                                "\"hint\": \"Make sure you're sending a valid JWT token in the Authorization header\"}",
+                                authException.getMessage(), path
+                            ));
                         })
                 )
 

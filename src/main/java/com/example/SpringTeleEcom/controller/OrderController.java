@@ -32,8 +32,16 @@ public class OrderController {
     @PreAuthorize("isAuthenticated()")
     @GetMapping("/orders/my")
     public ResponseEntity<List<OrderResponse>> getMyOrders() {
-        List<OrderResponse> orderResponseList = orderService.getCurrentUserOrderResponses();
-        return new ResponseEntity<>(orderResponseList, HttpStatus.OK);
+        System.out.println("📦 GET /api/orders/my - Fetching orders for current user");
+        try {
+            List<OrderResponse> orderResponseList = orderService.getCurrentUserOrderResponses();
+            System.out.println("✅ Found " + orderResponseList.size() + " orders for user");
+            return new ResponseEntity<>(orderResponseList, HttpStatus.OK);
+        } catch (Exception e) {
+            System.err.println("❌ Error fetching user orders: " + e.getMessage());
+            e.printStackTrace();
+            throw e;
+        }
     }
 
     // 🔹 Get all orders – ADMIN only (Order.jsx)
