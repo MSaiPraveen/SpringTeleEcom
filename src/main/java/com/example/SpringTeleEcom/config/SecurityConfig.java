@@ -72,6 +72,18 @@ public class SecurityConfig {
                         .anyRequest().authenticated()
                 )
 
+                // Disable form login to prevent 302 redirects
+                .formLogin(form -> form.disable())
+
+                // Return 401 instead of redirecting to login
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint((request, response, authException) -> {
+                            response.setStatus(401);
+                            response.setContentType("application/json");
+                            response.getWriter().write("{\"error\": \"Unauthorized\", \"message\": \"" + authException.getMessage() + "\"}");
+                        })
+                )
+
                 .oauth2Login(oauth2 -> oauth2
                         .successHandler(oAuth2SuccessHandler)
                 )
