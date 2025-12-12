@@ -28,7 +28,17 @@ public class ProductController {
     // Get all products (public)
     @GetMapping("/product")
     public ResponseEntity<List<Product>> getProducts() {
-        return ResponseEntity.ok(productService.getAllProducts());
+        System.out.println("📋 GET /api/product - Fetching all products");
+        List<Product> products = productService.getAllProducts();
+        System.out.println("📦 Found " + products.size() + " products");
+
+        if (!products.isEmpty()) {
+            System.out.println("📦 Sample product: " + products.get(0).getName());
+        } else {
+            System.out.println("⚠️ No products in database!");
+        }
+
+        return ResponseEntity.ok(products);
     }
 
 
@@ -138,6 +148,22 @@ public class ProductController {
             return ResponseEntity.ok("Product deleted successfully");
         } else {
             return ResponseEntity.notFound().build();
+        }
+    }
+
+    // Initialize sample products – ADMIN ONLY
+    @PreAuthorize("hasRole('ADMIN')")
+    @PostMapping("/product/initialize")
+    public ResponseEntity<String> initializeSampleProducts() {
+        System.out.println("🔑 Admin requested product initialization");
+        try {
+            dataInitializer.initializeProducts();
+            long count = productService.getAllProducts().size();
+            return ResponseEntity.ok("Sample products initialized successfully! Total products: " + count);
+        } catch (Exception e) {
+            System.err.println("❌ Error initializing products: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error initializing products: " + e.getMessage());
         }
     }
 }

@@ -1,13 +1,12 @@
 package com.example.SpringTeleEcom.model;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import org.springframework.boot.autoconfigure.domain.EntityScan;
 
 import java.math.BigDecimal;
 import java.util.Date;
@@ -33,6 +32,7 @@ public class Product {
     private String imageName;
     private String imageType;
     @Lob
+    @JsonIgnore // Don't serialize in list view - use /product/{id}/image endpoint instead
     private byte[] imageData;
 
 }
