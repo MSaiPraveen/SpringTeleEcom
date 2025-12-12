@@ -94,10 +94,22 @@ public class ProductController {
             @RequestPart(value = "imageFile", required = false) MultipartFile imageFile) {
 
         try {
+            System.out.println("📦 Received product upload request:");
+            System.out.println("   Product: " + product.getName());
+            System.out.println("   Image file: " + (imageFile != null ? imageFile.getOriginalFilename() : "null"));
+
             Product savedProduct = productService.addOrUpdateProduct(product, imageFile);
+
+            System.out.println("✅ Product saved successfully with ID: " + savedProduct.getId());
             return new ResponseEntity<>(savedProduct, HttpStatus.CREATED);
         } catch (IOException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
+            System.err.println("❌ Error uploading product: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error uploading product: " + e.getMessage());
+        } catch (Exception e) {
+            System.err.println("❌ Unexpected error: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Unexpected error: " + e.getMessage());
         }
     }
 
@@ -148,22 +160,6 @@ public class ProductController {
             return ResponseEntity.ok("Product deleted successfully");
         } else {
             return ResponseEntity.notFound().build();
-        }
-    }
-
-    // Initialize sample products – ADMIN ONLY
-    @PreAuthorize("hasRole('ADMIN')")
-    @PostMapping("/product/initialize")
-    public ResponseEntity<String> initializeSampleProducts() {
-        System.out.println("🔑 Admin requested product initialization");
-        try {
-            dataInitializer.initializeProducts();
-            long count = productService.getAllProducts().size();
-            return ResponseEntity.ok("Sample products initialized successfully! Total products: " + count);
-        } catch (Exception e) {
-            System.err.println("❌ Error initializing products: " + e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Error initializing products: " + e.getMessage());
         }
     }
 }

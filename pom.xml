@@ -5,9 +5,9 @@
 
     <groupId>com.example</groupId>
     <artifactId>SpringTeleEcom</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>5.1.0</version>
     <name>SpringTeleEcom</name>
-    <description>E-Commerce Project with Spring Boot</description>
+    <description>E-Commerce Project with Spring Boot - Version 5.1</description>
 
     <!-- Java version -->
     <properties>
