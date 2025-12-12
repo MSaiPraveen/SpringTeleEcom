@@ -56,6 +56,23 @@ public class AuthController {
         return ResponseEntity.ok(
                 new AuthResponse(token, newUser.getUsername(), false)
         );
+    }
 
+    @PostMapping("/register-admin")
+    public ResponseEntity<AuthResponse> registerAdmin(@RequestBody RegisterRequest request) {
+
+        System.out.println("🔑 Admin registration request for: " + request.username());
+
+        User newAdmin = authService.registerAdmin(
+                request.username(),
+                request.password(),
+                request.fullName()
+        );
+
+        String token = jwtService.generateToken(newAdmin.getUsername());
+
+        return ResponseEntity.ok(
+                new AuthResponse(token, newAdmin.getUsername(), true)
+        );
     }
 }

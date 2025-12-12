@@ -94,23 +94,37 @@ public class ProductController {
     // Update product – ADMIN
     @PreAuthorize("hasRole('ADMIN')")
     @PutMapping(value = "/product/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<String> updateProduct(
+    public ResponseEntity<?> updateProduct(
             @PathVariable Long id,
             @RequestPart("product") Product product,
             @RequestPart(value = "imageFile", required = false) MultipartFile imageFile) {
 
         try {
+            System.out.println("📝 Received product update request for ID: " + id);
+            System.out.println("   Product: " + product.getName());
+            System.out.println("   Image file: " + (imageFile != null ? imageFile.getOriginalFilename() : "null"));
+
             // Product.id is int in your entity, so we convert Long -> int here
             product.setId(Math.toIntExact(id));
 
             Product updatedProduct = productService.addOrUpdateProduct(product, imageFile);
             if (updatedProduct != null) {
-                return ResponseEntity.ok("Product updated successfully");
+                System.out.println("✅ Product updated successfully");
+                return ResponseEntity.ok(updatedProduct);
             } else {
+                System.err.println("❌ Product not found with ID: " + id);
                 return ResponseEntity.notFound().build();
             }
         } catch (IOException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
+            System.err.println("❌ Error updating product: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error updating product: " + e.getMessage());
+        } catch (Exception e) {
+            System.err.println("❌ Unexpected error: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Unexpected error: " + e.getMessage());
         }
     }
 

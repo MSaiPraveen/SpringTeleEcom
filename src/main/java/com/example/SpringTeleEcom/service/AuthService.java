@@ -34,4 +34,30 @@ public class AuthService {
 
         return userRepository.save(user);
     }
+
+    public User registerAdmin(String username, String password, String fullName) {
+        // Create or get ROLE_USER
+        Role userRole = roleRepository
+                .findByName("ROLE_USER")
+                .orElseGet(() -> roleRepository.save(
+                        Role.builder().name("ROLE_USER").build()
+                ));
+
+        // Create or get ROLE_ADMIN
+        Role adminRole = roleRepository
+                .findByName("ROLE_ADMIN")
+                .orElseGet(() -> roleRepository.save(
+                        Role.builder().name("ROLE_ADMIN").build()
+                ));
+
+        User user = User.builder()
+                .username(username)
+                .password(passwordEncoder.encode(password))
+                .fullName(fullName)
+                .roles(Set.of(userRole, adminRole))
+                .build();
+
+        System.out.println("🔑 Admin user created: " + username);
+        return userRepository.save(user);
+    }
 }
