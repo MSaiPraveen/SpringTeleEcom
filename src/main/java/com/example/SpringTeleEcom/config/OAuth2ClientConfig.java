@@ -90,7 +90,8 @@ public class OAuth2ClientConfig {
             // safe scope extraction
             List<String> scopes;
             if (registration.getScope() != null && !registration.getScope().isEmpty()) {
-                scopes = (List<String>) registration.getScope(); // already List<String>
+                // Convert Set to List (Spring returns LinkedHashSet)
+                scopes = new ArrayList<>(registration.getScope());
             } else {
                 scopes = getDefaultScopesFor(registrationId);
             }
