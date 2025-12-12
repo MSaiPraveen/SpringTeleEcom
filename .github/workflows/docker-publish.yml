@@ -38,8 +38,9 @@ jobs:
           file: ./Dockerfile
           push: true
           tags: |
-            saipraveenm919/teleecom-backend:latest
-            saipraveenm919/teleecom-backend:${{ github.sha }}
+            saipraveen919/teleecom-backend:latest
+            saipraveen919/teleecom-backend:${{ github.sha }}
+            saipraveen919/teleecom-backend:v5.1.0
 
       # ---- FRONTEND BUILD ----
       - name: Build & Push Frontend Image
@@ -49,5 +50,6 @@ jobs:
           file: ./frontend/Dockerfile
           push: true
           tags: |
-            saipraveenm919/teleecom-frontend:latest
-            saipraveenm919/teleecom-frontend:${{ github.sha }}
+            saipraveen919/teleecom-frontend:latest
+            saipraveen919/teleecom-frontend:${{ github.sha }}
+            saipraveen919/teleecom-frontend:v5.1.0
