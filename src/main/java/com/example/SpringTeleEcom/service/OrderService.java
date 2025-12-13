@@ -16,6 +16,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -66,12 +67,21 @@ public class OrderService {
 
         List<OrderItem> orderItems = new ArrayList<>();
 
+        System.out.println("📝 Processing " + request.items().size() + " item(s) from request:");
+
+        int itemIndex = 0;
         for (OrderItemRequest itemReq : request.items()) {
+            itemIndex++;
+
+            System.out.println("   Item " + itemIndex + ":");
+            System.out.println("      Product ID: " + itemReq.productId());
+            System.out.println("      Quantity Requested: " + itemReq.quantity());
 
             Product product = productRepo.findById(Math.toIntExact(itemReq.productId()))
                     .orElseThrow(() -> new RuntimeException("Product not found: " + itemReq.productId()));
 
-            System.out.println("   - Product: " + product.getName() + ", Qty: " + itemReq.quantity());
+            System.out.println("      Product Name: " + product.getName());
+            System.out.println("      Product Price: $" + product.getPrice());
 
             // reduce stock
             int newStock = product.getStockQuantity() - itemReq.quantity();
@@ -81,8 +91,13 @@ public class OrderService {
             product.setStockQuantity(newStock);
             productRepo.save(product);
 
+            System.out.println("      Stock before: " + (newStock + itemReq.quantity()));
+            System.out.println("      Stock after: " + newStock);
+
             BigDecimal lineTotal = product.getPrice()
                     .multiply(BigDecimal.valueOf(itemReq.quantity()));
+
+            System.out.println("      Line Total: $" + lineTotal);
 
             OrderItem orderItem = OrderItem.builder()
                     .product(product)
@@ -91,16 +106,51 @@ public class OrderService {
                     .order(order)
                     .build();
 
+            System.out.println("      ✅ OrderItem created with quantity: " + orderItem.getQuantity());
+
             orderItems.add(orderItem);
+            System.out.println("      ✅ Added to orderItems list (current size: " + orderItems.size() + ")");
         }
 
+        System.out.println("📦 Total OrderItems created: " + orderItems.size());
+
         order.setOrderItems(orderItems);
+
+        // Calculate totals
+        BigDecimal subtotal = orderItems.stream()
+                .map(OrderItem::getTotalPrice)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        // Calculate tax (10%)
+        BigDecimal taxRate = new BigDecimal("0.10");
+        BigDecimal tax = subtotal.multiply(taxRate).setScale(2, RoundingMode.HALF_UP);
+
+        // Calculate total
+        BigDecimal totalAmount = subtotal.add(tax);
+
+        order.setSubtotal(subtotal);
+        order.setTax(tax);
+        order.setTotalAmount(totalAmount);
+
+        System.out.println("💰 Order Totals:");
+        System.out.println("   Subtotal: $" + subtotal);
+        System.out.println("   Tax (10%): $" + tax);
+        System.out.println("   Total: $" + totalAmount);
+
         Order savedOrder = orderRepo.save(order);
 
         System.out.println("✅ Order saved successfully:");
         System.out.println("   Order ID: " + savedOrder.getOrderId());
         System.out.println("   Database ID: " + savedOrder.getId());
         System.out.println("   Items: " + savedOrder.getOrderItems().size());
+        System.out.println("   Total Amount: $" + savedOrder.getTotalAmount());
+
+        System.out.println("   📋 Saved Items Details:");
+        for (int i = 0; i < savedOrder.getOrderItems().size(); i++) {
+            OrderItem item = savedOrder.getOrderItems().get(i);
+            System.out.println("      Item " + (i + 1) + ": " + item.getProduct().getName() +
+                             " x " + item.getQuantity() + " = $" + item.getTotalPrice());
+        }
 
         return mapToOrderResponse(savedOrder);
     }
@@ -189,7 +239,10 @@ public class OrderService {
                 order.getEmail(),
                 order.getStatus(),
                 order.getOrderDate(),
-                itemResponses
+                itemResponses,
+                order.getSubtotal(),
+                order.getTax(),
+                order.getTotalAmount()
         );
     }
 }

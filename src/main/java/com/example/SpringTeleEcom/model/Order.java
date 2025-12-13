@@ -3,6 +3,7 @@ package com.example.SpringTeleEcom.model;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -25,6 +26,11 @@ public class Order {
 
     private String status;
     private LocalDate orderDate;
+
+    // Order totals
+    private BigDecimal subtotal;    // Sum of all items
+    private BigDecimal tax;         // Tax amount (e.g., 10% of subtotal)
+    private BigDecimal totalAmount; // Subtotal + Tax
 
     // 🔥 ADD THIS — link order → user
     @ManyToOne
