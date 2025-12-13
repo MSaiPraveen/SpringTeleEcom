@@ -18,11 +18,13 @@ public class OrderItem {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
-    @ManyToOne
-    private Product product;
-    private int quantity;
 
+    @ManyToOne(fetch = FetchType.EAGER)
+    private Product product;
+
+    private int quantity;
     private BigDecimal totalPrice;
+
     @ManyToOne(fetch = FetchType.LAZY)
     private Order order;
 

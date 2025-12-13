@@ -48,8 +48,23 @@ public class OrderController {
     @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/orders")
     public ResponseEntity<List<OrderResponse>> getAllOrders() {
-        List<OrderResponse> orderResponseList = orderService.getAllOrderResponses();
-        return new ResponseEntity<>(orderResponseList, HttpStatus.OK);
+        System.out.println("📦 GET /api/orders - Admin fetching all orders");
+        try {
+            List<OrderResponse> orderResponseList = orderService.getAllOrderResponses();
+            System.out.println("✅ Found " + orderResponseList.size() + " total orders in database");
+
+            if (!orderResponseList.isEmpty()) {
+                System.out.println("📋 Sample order: " + orderResponseList.get(0).orderId());
+            } else {
+                System.out.println("⚠️ No orders found in database!");
+            }
+
+            return new ResponseEntity<>(orderResponseList, HttpStatus.OK);
+        } catch (Exception e) {
+            System.err.println("❌ Error fetching all orders: " + e.getMessage());
+            e.printStackTrace();
+            throw e;
+        }
     }
 
 

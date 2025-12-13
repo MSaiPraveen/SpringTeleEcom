@@ -32,7 +32,7 @@ public class Order {
     private User user;
 
     // Order items - using "items" field name to match your getOrderItems() method
-    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     private List<OrderItem> items;
 
     // Lombok will generate getItems() and setItems()

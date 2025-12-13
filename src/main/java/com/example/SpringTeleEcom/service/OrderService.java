@@ -38,11 +38,20 @@ public class OrderService {
     // 🔹 Place order for the currently logged-in user
     public OrderResponse placeOrder(OrderRequest request) {
 
+        System.out.println("🛒 PlaceOrder - Starting order creation");
+        System.out.println("   Customer: " + request.customerName());
+        System.out.println("   Email: " + request.email());
+        System.out.println("   Items count: " + request.items().size());
+
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         String username = auth.getName();
 
+        System.out.println("   Authenticated user: " + username);
+
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found: " + username));
+
+        System.out.println("   User ID: " + user.getId());
 
         Order order = new Order();
         String orderId = "ORD" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
@@ -53,12 +62,16 @@ public class OrderService {
         order.setOrderDate(LocalDate.now());
         order.setUser(user);
 
+        System.out.println("   Generated Order ID: " + orderId);
+
         List<OrderItem> orderItems = new ArrayList<>();
 
         for (OrderItemRequest itemReq : request.items()) {
 
             Product product = productRepo.findById(Math.toIntExact(itemReq.productId()))
                     .orElseThrow(() -> new RuntimeException("Product not found: " + itemReq.productId()));
+
+            System.out.println("   - Product: " + product.getName() + ", Qty: " + itemReq.quantity());
 
             // reduce stock
             int newStock = product.getStockQuantity() - itemReq.quantity();
@@ -83,6 +96,11 @@ public class OrderService {
 
         order.setOrderItems(orderItems);
         Order savedOrder = orderRepo.save(order);
+
+        System.out.println("✅ Order saved successfully:");
+        System.out.println("   Order ID: " + savedOrder.getOrderId());
+        System.out.println("   Database ID: " + savedOrder.getId());
+        System.out.println("   Items: " + savedOrder.getOrderItems().size());
 
         return mapToOrderResponse(savedOrder);
     }
@@ -121,7 +139,24 @@ public class OrderService {
 
     // 🔹 All orders (Admin)
     public List<OrderResponse> getAllOrderResponses() {
+        System.out.println("🔍 OrderService - Getting all orders from database");
+
         List<Order> orders = orderRepo.findAll();
+
+        System.out.println("📊 Total orders in database: " + orders.size());
+
+        if (!orders.isEmpty()) {
+            System.out.println("📋 Order details:");
+            orders.forEach(order -> {
+                System.out.println("   - Order ID: " + order.getOrderId() +
+                                 ", Customer: " + order.getCustomerName() +
+                                 ", Status: " + order.getStatus() +
+                                 ", Items: " + order.getOrderItems().size());
+            });
+        } else {
+            System.out.println("⚠️ No orders found in database! Check if orders are being saved properly.");
+        }
+
         return orders.stream()
                 .map(this::mapToOrderResponse)
                 .collect(Collectors.toList());
