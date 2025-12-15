@@ -55,6 +55,9 @@ public class SecurityConfig {
                         // allow preflight requests
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
+                        // Health check endpoints (for Render and monitoring)
+                        .requestMatchers("/health/**", "/actuator/health/**", "/actuator/info").permitAll()
+
                         // Auth APIs (login / register)
                         .requestMatchers("/api/auth/**").permitAll()
 

@@ -34,6 +34,9 @@ build/
 
 ### Environment Variables ###
 .env
+.env.local
+.env.docker.local
+.env.production
 
 ### Temporary/Test Files ###
 *.html
@@ -46,4 +49,12 @@ build/
 
 ### Docker ###
 docker-compose-db-only.yml
+docker-compose.local.yml
+
+### Local Testing (DO NOT COMMIT) ###
+TESTING_MONITORING_LOCALLY.md
+QUICK_START_TESTING.md
+application-test.properties
+test-results/
+*.log
 

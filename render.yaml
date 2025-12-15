@@ -31,8 +31,6 @@ services:
       GITHUB_CLIENT_ID: "${GITHUB_CLIENT_ID}"
       GITHUB_CLIENT_SECRET: "${GITHUB_CLIENT_SECRET}"
 
-    # Optional: increase startup timeout if your app starts slowly
-    start_timeout_seconds: 12000
 
 # If you need multiple services (static site, jobs, cron, etc.), add them below following the same structure.
 # After committing this file, Render will use it when creating/updating the service if you create the service from the repo.
