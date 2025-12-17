@@ -36,6 +36,17 @@ public class OrderController {
         try {
             List<OrderResponse> orderResponseList = orderService.getCurrentUserOrderResponses();
             System.out.println("✅ Found " + orderResponseList.size() + " orders for user");
+
+            // Log each order's tax details for debugging
+            orderResponseList.forEach(order -> {
+                System.out.println("   Order " + order.orderId() + ":");
+                System.out.println("      Subtotal: $" + order.subtotal());
+                System.out.println("      Shipping: $" + order.shipping());
+                System.out.println("      Tax: $" + order.tax());
+                System.out.println("      Total: $" + order.totalAmount());
+                System.out.println("      Items: " + order.items().size());
+            });
+
             return new ResponseEntity<>(orderResponseList, HttpStatus.OK);
         } catch (Exception e) {
             System.err.println("❌ Error fetching user orders: " + e.getMessage());

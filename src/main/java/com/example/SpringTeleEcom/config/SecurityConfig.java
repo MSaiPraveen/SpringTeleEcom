@@ -55,6 +55,9 @@ public class SecurityConfig {
                         // allow preflight requests
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
+                        // Root path and static resources (public)
+                        .requestMatchers("/", "/index.html", "/favicon.ico", "/static/**", "/assets/**").permitAll()
+
                         // Health check endpoints (for Render and monitoring)
                         .requestMatchers("/health/**", "/actuator/health/**", "/actuator/info").permitAll()
 

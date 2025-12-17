@@ -11,8 +11,9 @@ public record OrderResponse(
         String status,
         LocalDate orderDate,
         List<OrderItemResponse> items,
-        BigDecimal subtotal,    // Sum of all items before tax
+        BigDecimal subtotal,    // Sum of all items before shipping and tax
+        BigDecimal shipping,    // Shipping cost
         BigDecimal tax,         // Tax amount
-        BigDecimal totalAmount  // Subtotal + Tax
+        BigDecimal totalAmount  // Subtotal + Shipping + Tax
 ) {
 }

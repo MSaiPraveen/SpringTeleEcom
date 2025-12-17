@@ -29,8 +29,9 @@ public class Order {
 
     // Order totals
     private BigDecimal subtotal;    // Sum of all items
+    private BigDecimal shipping;    // Shipping cost
     private BigDecimal tax;         // Tax amount (e.g., 10% of subtotal)
-    private BigDecimal totalAmount; // Subtotal + Tax
+    private BigDecimal totalAmount; // Subtotal + Shipping + Tax
 
     // 🔥 ADD THIS — link order → user
     @ManyToOne

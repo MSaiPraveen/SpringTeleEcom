@@ -131,6 +131,11 @@ public class ProductController {
         try {
             System.out.println("📦 Received product upload request:");
             System.out.println("   Product: " + product.getName());
+            System.out.println("   Brand: " + product.getBrand());
+            System.out.println("   Price: " + product.getPrice());
+            System.out.println("   Category: " + product.getCategory());
+            System.out.println("   Stock: " + product.getStockQuantity());
+            System.out.println("   Release Date: " + product.getReleaseDate());
             System.out.println("   Image file: " + (imageFile != null ? imageFile.getOriginalFilename() : "null"));
 
             Product savedProduct = productService.addOrUpdateProduct(product, imageFile);
@@ -138,11 +143,14 @@ public class ProductController {
             System.out.println("✅ Product saved successfully with ID: " + savedProduct.getId());
             return new ResponseEntity<>(savedProduct, HttpStatus.CREATED);
         } catch (IOException e) {
-            System.err.println("❌ Error uploading product: " + e.getMessage());
+            System.err.println("❌ Error uploading product (IOException): " + e.getMessage());
+            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Error uploading product: " + e.getMessage());
         } catch (Exception e) {
             System.err.println("❌ Unexpected error: " + e.getMessage());
+            System.err.println("❌ Error class: " + e.getClass().getName());
+            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Unexpected error: " + e.getMessage());
         }

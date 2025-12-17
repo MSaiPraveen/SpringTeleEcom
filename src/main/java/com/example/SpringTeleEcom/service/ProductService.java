@@ -37,6 +37,14 @@ public class ProductService {
      */
     public Product addOrUpdateProduct(Product product, MultipartFile imageFile) throws IOException {
 
+        // Validate required fields
+        if (product.getName() == null || product.getName().trim().isEmpty()) {
+            throw new IllegalArgumentException("Product name is required");
+        }
+        if (product.getPrice() == null) {
+            throw new IllegalArgumentException("Product price is required");
+        }
+
         Product productToSave;
 
         // If updating an existing product, load it first
@@ -49,13 +57,15 @@ public class ProductService {
 
         // Copy basic fields (except image fields)
         productToSave.setName(product.getName());
-        productToSave.setDescription(product.getDescription());
-        productToSave.setBrand(product.getBrand());
+        productToSave.setDescription(product.getDescription() != null ? product.getDescription() : "");
+        productToSave.setBrand(product.getBrand() != null ? product.getBrand() : "");
         productToSave.setPrice(product.getPrice());
-        productToSave.setCategory(product.getCategory());
+        productToSave.setCategory(product.getCategory() != null ? product.getCategory() : "");
         productToSave.setReleaseDate(product.getReleaseDate());
-        productToSave.setProductAvailable(product.isProductAvailable());
         productToSave.setStockQuantity(product.getStockQuantity());
+
+        // Automatically set productAvailable based on stock quantity
+        productToSave.setProductAvailable(product.getStockQuantity() > 0);
 
         // Handle image (only replace if a new file is sent)
         if (imageFile != null && !imageFile.isEmpty()) {

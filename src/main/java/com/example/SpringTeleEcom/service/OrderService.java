@@ -116,24 +116,45 @@ public class OrderService {
 
         order.setOrderItems(orderItems);
 
-        // Calculate totals
-        BigDecimal subtotal = orderItems.stream()
-                .map(OrderItem::getTotalPrice)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        // Use frontend-calculated values if provided, otherwise calculate on backend
+        BigDecimal subtotal;
+        BigDecimal shipping;
+        BigDecimal tax;
+        BigDecimal totalAmount;
 
-        // Calculate tax (10%)
-        BigDecimal taxRate = new BigDecimal("0.10");
-        BigDecimal tax = subtotal.multiply(taxRate).setScale(2, RoundingMode.HALF_UP);
+        if (request.subtotal() != null && request.tax() != null && request.totalAmount() != null) {
+            // Use frontend-provided values
+            subtotal = request.subtotal();
+            shipping = request.shipping() != null ? request.shipping() : BigDecimal.ZERO;
+            tax = request.tax();
+            totalAmount = request.totalAmount();
 
-        // Calculate total
-        BigDecimal totalAmount = subtotal.add(tax);
+            System.out.println("💰 Using frontend-calculated totals:");
+        } else {
+            // Fallback: Calculate on backend (legacy support)
+            subtotal = orderItems.stream()
+                    .map(OrderItem::getTotalPrice)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+            shipping = BigDecimal.ZERO; // Default shipping
+
+            // Calculate tax (10%)
+            BigDecimal taxRate = new BigDecimal("0.10");
+            tax = subtotal.multiply(taxRate).setScale(2, RoundingMode.HALF_UP);
+
+            // Calculate total
+            totalAmount = subtotal.add(shipping).add(tax);
+
+            System.out.println("💰 Backend-calculated totals:");
+        }
 
         order.setSubtotal(subtotal);
+        order.setShipping(shipping);
         order.setTax(tax);
         order.setTotalAmount(totalAmount);
 
-        System.out.println("💰 Order Totals:");
         System.out.println("   Subtotal: $" + subtotal);
+        System.out.println("   Shipping: $" + shipping);
         System.out.println("   Tax (10%): $" + tax);
         System.out.println("   Total: $" + totalAmount);
 
@@ -241,6 +262,7 @@ public class OrderService {
                 order.getOrderDate(),
                 itemResponses,
                 order.getSubtotal(),
+                order.getShipping() != null ? order.getShipping() : BigDecimal.ZERO,
                 order.getTax(),
                 order.getTotalAmount()
         );
